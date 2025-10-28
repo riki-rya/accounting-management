@@ -3,6 +3,13 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export default async function middleware(request: NextRequest) {
+  // リダイレクトループ防止：リダイレクト回数をチェック
+  const redirectCount = request.headers.get('x-redirect-count');
+  if (redirectCount && parseInt(redirectCount) > 5) {
+    console.error('Too many redirects detected');
+    return NextResponse.next();
+  }
+
   let response = NextResponse.next({
     request: {
       headers: request.headers,

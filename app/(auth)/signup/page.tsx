@@ -52,6 +52,9 @@ export default function SignupPage() {
 
         if (insertError) throw insertError;
 
+        // セッションが確立されるまで少し待機
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
         // 登録成功後、ダッシュボードへリダイレクト（完全リロード）
         window.location.href = '/dashboard';
       }
