@@ -3,15 +3,15 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getCurrentMonth } from '@/lib/utils';
+import { getMonthsAgo } from '@/lib/utils';
 
 export default function TransactionsPage() {
   const router = useRouter();
 
   useEffect(() => {
-    // 現在の月にリダイレクト
-    const currentMonth = getCurrentMonth();
-    router.replace(`/transactions/${currentMonth}`);
+    // 前月にリダイレクト
+    const previousMonth = getMonthsAgo(1);
+    router.replace(`/transactions/${previousMonth}`);
   }, [router]);
 
   return (
