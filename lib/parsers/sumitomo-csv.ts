@@ -3,22 +3,15 @@ import Papa from 'papaparse';
 import { CSVTransaction } from '@/lib/types';
 
 /**
- * 三井住友カードのCSVフォーマット
- * 列: 利用日, 利用店名, 利用金額, 支払区分, 当月請求額
+ * 三井住友カードのCSVフォーマット（ヘッダーなし）
+ * 1行目: ユーザー名, カード番号, カード種類
+ * 2行目以降: 利用日, 利用店名, 利用金額, ...
  */
-interface SumitomoCSVRow {
-  '利用日'?: string;
-  '利用店名'?: string;
-  '利用金額'?: string;
-  '支払区分'?: string;
-  '当月請求額'?: string;
-}
 
 export function parseSumitomoCSV(csvContent: string): CSVTransaction[] {
-  const results = Papa.parse<SumitomoCSVRow>(csvContent, {
-    header: true,
+  const results = Papa.parse<string[]>(csvContent, {
+    header: false, // ヘッダーなし
     skipEmptyLines: true,
-    transformHeader: (header) => header.trim(), // ヘッダーの空白を除去
   });
 
   if (results.errors.length > 0) {
@@ -27,36 +20,31 @@ export function parseSumitomoCSV(csvContent: string): CSVTransaction[] {
 
   const transactions: CSVTransaction[] = [];
 
+  // 1行目はユーザー情報なのでスキップ
   results.data.forEach((row, index) => {
+    // 1行目（ユーザー情報）をスキップ
+    if (index === 0) return;
+
     try {
-      // 利用日をパース (例: 2024/01/15 または 01/15)
-      const dateStr = row['利用日']?.trim();
-      if (!dateStr) return;
+      // 列0: 利用日
+      const dateStr = row[0]?.trim();
+      if (!dateStr) return; // 利用日が空の場合はスキップ（合計行など）
 
-      let date: string;
+      // YYYY/MM/DD形式をYYYY-MM-DD形式に変換
       const parts = dateStr.split('/');
-      
-      if (parts.length === 3) {
-        // YYYY/MM/DD形式
-        const [year, month, day] = parts;
-        date = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-      } else if (parts.length === 2) {
-        // MM/DD形式（年は現在年を使用）
-        const [month, day] = parts;
-        const currentYear = new Date().getFullYear();
-        date = `${currentYear}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-      } else {
-        return;
-      }
+      if (parts.length !== 3) return;
 
-      // 利用金額をパース
-      const amountStr = row['利用金額']?.replace(/,/g, '').replace(/円/g, '').trim();
+      const [year, month, day] = parts;
+      const date = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+
+      // 列1: 利用店名
+      const description = row[1]?.trim() || '';
+      if (!description) return;
+
+      // 列2: 利用金額
+      const amountStr = row[2]?.replace(/,/g, '').trim();
       if (!amountStr) return;
       const amount = -Math.abs(parseFloat(amountStr)); // 支出は負の値
-
-      // 説明文
-      const description = row['利用店名']?.trim() || '';
-      if (!description) return;
 
       // 一意のIDを生成
       const externalId = `sumitomo_${date}_${description}_${Math.abs(amount)}`;
@@ -68,7 +56,7 @@ export function parseSumitomoCSV(csvContent: string): CSVTransaction[] {
         external_id: externalId,
       });
     } catch (error) {
-      console.warn(`行 ${index + 2} の解析をスキップしました:`, error);
+      console.warn(`行 ${index + 1} の解析をスキップしました:`, error);
     }
   });
 
@@ -81,15 +69,21 @@ export function parseSumitomoCSV(csvContent: string): CSVTransaction[] {
 
 /**
  * 三井住友カードのCSVかどうかを判定
+ * 1行目にカード番号のパターン（****-****-****-****）が含まれているかチェック
  */
 export function isSumitomoCSV(csvContent: string): boolean {
   const lines = csvContent.split('\n');
-  if (lines.length === 0) return false;
+  if (lines.length < 2) return false;
 
-  const header = lines[0];
-  return (
-    header.includes('利用日') &&
-    header.includes('利用店名') &&
-    header.includes('利用金額')
-  );
+  const firstLine = lines[0];
+
+  // カード番号のパターンをチェック（数字-数字の形式）
+  // 例: 5334-91**-****-**** または ****-****-****-****
+  const hasCardNumber = /\d{4}-[\d*]{4}-[\d*]{4}-[\d*]{4}/.test(firstLine);
+
+  // 2行目が日付で始まるかチェック（YYYY/MM/DD形式）
+  const secondLine = lines[1];
+  const hasDateFormat = /^\d{4}\/\d{2}\/\d{2}/.test(secondLine);
+
+  return hasCardNumber && hasDateFormat;
 }
