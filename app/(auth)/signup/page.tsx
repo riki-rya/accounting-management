@@ -52,9 +52,8 @@ export default function SignupPage() {
 
         if (insertError) throw insertError;
 
-        // 登録成功後、ダッシュボードへリダイレクト
-        router.push('/dashboard');
-        router.refresh();
+        // 登録成功後、ダッシュボードへリダイレクト（完全リロード）
+        window.location.href = '/dashboard';
       }
     } catch (err: any) {
       setError(err.message || '登録に失敗しました');

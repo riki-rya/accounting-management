@@ -28,8 +28,8 @@ export default function LoginPage() {
       if (error) throw error;
 
       if (data.user) {
-        router.push('/dashboard');
-        router.refresh();
+        // ログイン成功後、ダッシュボードへリダイレクト（完全リロード）
+        window.location.href = '/dashboard';
       }
     } catch (err: any) {
       setError(err.message || 'ログインに失敗しました');
