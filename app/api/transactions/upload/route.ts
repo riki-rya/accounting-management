@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { parseRakutenCSV, isRakutenCSV } from '@/lib/parsers/rakuten-csv';
 import { parseSumitomoCSV, isSumitomoCSV } from '@/lib/parsers/sumitomo-csv';
 import { UploadResult } from '@/lib/types';
+import * as Encoding from 'encoding-japanese';
 
 /**
  * 説明文からカテゴリを自動判定
@@ -55,10 +56,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ファイルを読み込み
+    // ファイルを読み込み（エンコーディングを自動検出）
     let csvContent: string;
     try {
-      csvContent = await file.text();
+      const buffer = await file.arrayBuffer();
+      const codes = new Uint8Array(buffer);
+
+      // エンコーディングを自動検出
+      const detectedEncoding = Encoding.detect(codes);
+      console.log('Detected encoding:', detectedEncoding);
+
+      // UTF-8に変換
+      const fromEncoding = (typeof detectedEncoding === 'string' && detectedEncoding)
+        ? detectedEncoding
+        : 'AUTO';
+
+      const unicodeArray = Encoding.convert(codes, {
+        to: 'UNICODE',
+        from: fromEncoding,
+      }) as number[];
+
+      csvContent = Encoding.codeToString(unicodeArray);
     } catch (error) {
       console.error('File read error:', error);
       return NextResponse.json(
