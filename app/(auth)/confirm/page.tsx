@@ -5,6 +5,9 @@ import { useRouter, useSearchParams } from 'next/navigation'
 
 type ConfirmationStatus = 'success' | 'error' | 'expired' | 'invalid'
 
+// 動的レンダリングを強制（useSearchParams使用のため）
+export const dynamic = 'force-dynamic'
+
 export default function ConfirmPage() {
   const [status, setStatus] = useState<ConfirmationStatus>('error')
   const [errorMessage, setErrorMessage] = useState<string>('')
