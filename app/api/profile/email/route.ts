@@ -23,7 +23,15 @@ export async function PUT(request: NextRequest) {
     }
 
     const supabase = await createClient();
-    const { error } = await supabase.auth.updateUser({ email });
+
+    // メール変更確認用のリダイレクトURLを設定（サーバー側で処理）
+    const redirectUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/callback`;
+
+    const { error } = await supabase.auth.updateUser({
+      email
+    }, {
+      emailRedirectTo: redirectUrl,
+    });
 
     if (error) {
       throw error;

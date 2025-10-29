@@ -34,10 +34,16 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
+      // メール認証用のリダイレクトURLを設定（サーバー側で処理）
+      const redirectUrl = `${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/auth/callback`;
+
       // Supabase Authでユーザー登録
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          emailRedirectTo: redirectUrl,
+        },
       });
 
       if (authError) throw authError;
@@ -47,18 +53,25 @@ export default function SignupPage() {
         const { data: sessionData } = await supabase.auth.getSession();
 
         if (!sessionData.session) {
-          // メール確認が必要な場合
+          // メール確認が必要な場合（メールが送信される）
           setNeedsEmailConfirmation(true);
           setSuccess(true);
         } else {
           // メール確認が不要な場合（即座にログイン）
-          // usersテーブルにレコード作成（トリガーでカテゴリも自動コピーされる）
+          // まずroleを取得
+          const { data: roleData } = await supabase
+            .from('roles')
+            .select('id')
+            .eq('name', 'user')
+            .single();
+
+          // usersテーブルにレコード作成
           const { error: insertError } = await supabase
             .from('users')
             .insert({
               id: authData.user.id,
               email: authData.user.email,
-              role_id: (await supabase.from('roles').select('id').eq('name', 'user').single()).data?.id,
+              role_id: roleData?.id,
             });
 
           if (insertError && insertError.code !== '23505') {

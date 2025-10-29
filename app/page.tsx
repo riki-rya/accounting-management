@@ -1,10 +1,16 @@
 // app/page.tsx
 import Link from 'next/link';
 import { ArrowRight, BarChart3, Upload, Shield } from 'lucide-react';
+import { Suspense } from 'react';
+import AuthCallbackHandler from './components/AuthCallbackHandler';
 
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+      {/* メール認証コールバックハンドラー */}
+      <Suspense fallback={null}>
+        <AuthCallbackHandler />
+      </Suspense>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         {/* ヘッダー */}
         <div className="text-center mb-16">
