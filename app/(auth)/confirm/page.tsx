@@ -1,14 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 type ConfirmationStatus = 'success' | 'error' | 'expired' | 'invalid'
 
-// 動的レンダリングを強制（useSearchParams使用のため）
-export const dynamic = 'force-dynamic'
-
-export default function ConfirmPage() {
+function ConfirmContent() {
   const [status, setStatus] = useState<ConfirmationStatus>('error')
   const [errorMessage, setErrorMessage] = useState<string>('')
   const [redirectPath, setRedirectPath] = useState<string>('/dashboard')
@@ -163,5 +160,17 @@ export default function ConfirmPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function ConfirmPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    }>
+      <ConfirmContent />
+    </Suspense>
   )
 }
